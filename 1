@@ -4,8 +4,6 @@ Router R1
 interface Loopback 0
 ip address 192.168.1.1 255.255.255.0
 interface Serial0/0/0
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 ip address 209.165.201.2 255.255.255.252
 no shutdown
 interface Serial0/0/1
@@ -22,8 +20,6 @@ no shutdown
 interface Serial0/0/1
 ip address 209.165.200.225 255.255.255.252
 no shutdown
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 Router ISP2 (R3)
 interface Loopback0
 ip address 209.165.200.254 255.255.255.255
@@ -36,8 +32,6 @@ no shutdown
 interface Serial0/0/1
 ip address 209.165.200.226 255.255.255.252
 no shutdown
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 b. Verify the configuration by using the show interfaces description command. The 
 output from router R1 is shown here as an example.
 R1# show interfaces description
@@ -51,8 +45,6 @@ Router R1
 ip route 0.0.0.0 0.0.0.0 209.165.201.1
 Router ISP1 (R2)
 router eigrp 1
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 network 209.165.200.224 0.0.0.3
 network 209.165.201.0 0.0.0.31
 no auto-summary
@@ -72,8 +64,6 @@ R1(tcl)# foreach address {
 +>(tcl)# 209.165.201.30
 +>(tcl)# 209.165.202.158
 +>(tcl)# } { ping $address source 192.168.1.1 }
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 b. Trace the path taken to the web server, ISP1 DNS server, and ISP2 DNS server. You 
 can copy the following Tcl script and paste it into R1.
 R1(tcl)# foreach address {
@@ -81,8 +71,6 @@ R1(tcl)# foreach address {
 +>(tcl)# 209.165.201.30
 +>(tcl)# 209.165.202.158
 +>(tcl)# } { trace $address source 192.168.1.1 }
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 Step 3: Configure IP SLA probes.
 a. Create an ICMP echo probe on R1 to the primary DNS server on ISP1 using the ip sla 
 command. the previous ip sla monitor command. In addition, the icmp-echo command 
@@ -95,8 +83,6 @@ R1(config)# ip sla schedule 11 life forever start-time now
 b. Verify the IP SLAs configuration of operation 11 using the show ip sla configuration 
 11 command.
 R1# show ip sla configuration 11
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 c. Issue the show ip sla statistics command to display the number of successes, failures, 
 and results of the latest operations.
 R1# show ip sla statistics
@@ -106,8 +92,6 @@ server located on router ISP2. You can copy and paste the following commands on 
 e. Verify the new probe using the show ip sla configuration and show ip sla statistics 
 commands.
 R1# show ip sla configuration 22
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 R1# show ip sla statistics 22
 Step 4: Configure tracking options.
 a. Remove the current default route on R1, and replace it with a floating static route 
@@ -117,8 +101,6 @@ R1(config)# ip route 0.0.0.0 0.0.0.0 209.165.201.1 5
 R1(config)# exit
 b. Verify the routing table.
 R1# show ip route
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 c. Use the track 1 ip sla 11 reachability command to enter the config-track 
 subconfiguration mode.
 R1(config)# track 1 ip sla 11 reachability
@@ -137,8 +119,6 @@ configuration, which sets an admin distance of 3. track 2 ip sla 22 reachability
 down 10 up 1 exit
 ip route 0.0.0.0 0.0.0.0 209.165.202.129 3 track 2
 f. Verify the routing table again.
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 R1# show ip route
 Step 5: Verify IP SLA operation.
 The following summarizes the process:
@@ -151,15 +131,11 @@ ISP1(config)# interface loopback 1
 ISP1(config-if)# shutdown
 b. Verify the routing table.
 R1# show ip route
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 c. Verify the IP SLA statistics.
 R1# show ip sla statistics
 d. Initiate a trace to the web server from the internal LAN IP address.
 R1# trace 209.165.200.254 source 192.168.1.1
 f. Again examine the IP SLA statistics.
 R1# show ip sla statistics
-M.SC.I.T GOVIND SAINI( 7 )
-MODERN NETWORKING
 g. Verify the routing table.
 R1# show ip route
