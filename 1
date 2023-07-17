@@ -1,0 +1,165 @@
+Step 1: Prepare the routers and configure the router hostname and interface 
+addresses.
+Router R1
+interface Loopback 0
+ip address 192.168.1.1 255.255.255.0
+interface Serial0/0/0
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+ip address 209.165.201.2 255.255.255.252
+no shutdown
+interface Serial0/0/1
+ip address 209.165.202.130 255.255.255.252
+no shutdown
+Router ISP1 (R2)
+interface Loopback0
+ip address 209.165.200.254 255.255.255.255
+interface Loopback1
+ip address 209.165.201.30 255.255.255.255
+interface Serial0/0/0
+ip address 209.165.201.1 255.255.255.252
+no shutdown
+interface Serial0/0/1
+ip address 209.165.200.225 255.255.255.252
+no shutdown
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+Router ISP2 (R3)
+interface Loopback0
+ip address 209.165.200.254 255.255.255.255
+interface Loopback1
+ip address 209.165.202.158 255.255.255.255
+interface Serial0/0/0
+description ISP2 --> R1
+ip address 209.165.202.129 255.255.255.252
+no shutdown
+interface Serial0/0/1
+ip address 209.165.200.226 255.255.255.252
+no shutdown
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+b. Verify the configuration by using the show interfaces description command. The 
+output from router R1 is shown here as an example.
+R1# show interfaces description
+c. The current routing policy in the topology is as follows:
+− Router R1 establishes connectivity to the Internet through ISP1 using a default 
+static route.
+− ISP1 and ISP2 have dynamic routing enabled between them, advertising their 
+respective public address pools.
+− ISP1 and ISP2 both have static routes back to the ISP LAN.
+Router R1
+ip route 0.0.0.0 0.0.0.0 209.165.201.1
+Router ISP1 (R2)
+router eigrp 1
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+network 209.165.200.224 0.0.0.3
+network 209.165.201.0 0.0.0.31
+no auto-summary
+ip route 192.168.1.0 255.255.255.0 209.165.201.2
+Router ISP2 (R3)
+router eigrp 1
+network 209.165.200.224 0.0.0.3
+network 209.165.202.128 0.0.0.31
+no auto-summary
+ip route 192.168.1.0 255.255.255.0 209.165.202.130
+Step 2: Verify server reachability.
+a. Before implementing the Cisco IOS SLA feature, you must verify reachability to the 
+Internet servers. From router R1, ping the web server, ISP1 DNS server, and ISP2 DNS 
+server to verify connectivity. You can copy the following Tcl script and paste it intoR1.
+R1(tcl)# foreach address {
++>(tcl)# 209.165.200.254
++>(tcl)# 209.165.201.30
++>(tcl)# 209.165.202.158
++>(tcl)# } { ping $address source 192.168.1.1 }
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+b. Trace the path taken to the web server, ISP1 DNS server, and ISP2 DNS server. You 
+can copy the following Tcl script and paste it into R1.
+R1(tcl)# foreach address {
++>(tcl)# 209.165.200.254
++>(tcl)# 209.165.201.30
++>(tcl)# 209.165.202.158
++>(tcl)# } { trace $address source 192.168.1.1 }
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+Step 3: Configure IP SLA probes.
+a. Create an ICMP echo probe on R1 to the primary DNS server on ISP1 using the ip sla 
+command. the previous ip sla monitor command. In addition, the icmp-echo command 
+has replaced the type echo protocol ipIcmpEcho command.
+R1(config)# ip sla 11
+R1(config-ip-sla)# icmp-echo 209.165.201.30
+R1(config-ip-sla-echo)# frequency 10
+R1(config-ip-sla-echo)# exit
+R1(config)# ip sla schedule 11 life forever start-time now
+b. Verify the IP SLAs configuration of operation 11 using the show ip sla configuration 
+11 command.
+R1# show ip sla configuration 11
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+c. Issue the show ip sla statistics command to display the number of successes, failures, 
+and results of the latest operations.
+R1# show ip sla statistics
+d. Although not actually required because IP SLA session 11 alone could provide the 
+desired fault tolerance, create a second probe, 22, to test connectivity to the second DNS 
+server located on router ISP2. You can copy and paste the following commands on R1.
+e. Verify the new probe using the show ip sla configuration and show ip sla statistics 
+commands.
+R1# show ip sla configuration 22
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+R1# show ip sla statistics 22
+Step 4: Configure tracking options.
+a. Remove the current default route on R1, and replace it with a floating static route 
+having an administrative distance of 5.
+R1(config)# no ip route 0.0.0.0 0.0.0.0 209.165.201.1
+R1(config)# ip route 0.0.0.0 0.0.0.0 209.165.201.1 5
+R1(config)# exit
+b. Verify the routing table.
+R1# show ip route
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+c. Use the track 1 ip sla 11 reachability command to enter the config-track 
+subconfiguration mode.
+R1(config)# track 1 ip sla 11 reachability
+R1(config-track)#
+d. Configure the floating static route that will be implemented when tracking object 1 is 
+active. To view routing table changes as they happen, first enable the debug ip routing 
+command. Next, use the ip route 0.0.0.0 0.0.0.0 209.165.201.1 2 track 1 command to 
+create a floating static default route via 209.165.201.1 (ISP1). Notice that this command 
+references the tracking object number 1, which in turn references IP SLA operation 
+number 11.
+R1# debug ip routing
+R1(config)# ip route 0.0.0.0 0.0.0.0 209.165.201.1 2 track 1
+e. Repeat the steps for operation 22, track number 2, and assign the static route an 
+admin distance higher than track 1 and lower than 5. On R1, copy the following 
+configuration, which sets an admin distance of 3. track 2 ip sla 22 reachability delay 
+down 10 up 1 exit
+ip route 0.0.0.0 0.0.0.0 209.165.202.129 3 track 2
+f. Verify the routing table again.
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+R1# show ip route
+Step 5: Verify IP SLA operation.
+The following summarizes the process:
+− Disable the DNS loopback interface on ISP1 (R2).
+− Observe the output of the debug command on R1.
+− Verify the static route entries in the routing table and the IP SLA statistics of R1.
+− Re-enable the loopback interface on ISP1 (R2) and again observe the operation of 
+the IP SLA tracking feature.
+ISP1(config)# interface loopback 1
+ISP1(config-if)# shutdown
+b. Verify the routing table.
+R1# show ip route
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+c. Verify the IP SLA statistics.
+R1# show ip sla statistics
+d. Initiate a trace to the web server from the internal LAN IP address.
+R1# trace 209.165.200.254 source 192.168.1.1
+f. Again examine the IP SLA statistics.
+R1# show ip sla statistics
+M.SC.I.T GOVIND SAINI( 7 )
+MODERN NETWORKING
+g. Verify the routing table.
+R1# show ip route
