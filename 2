@@ -1,0 +1,87 @@
+Step 1 : Prepare the routers for the lab.
+Cable the network as shown in the topology diagram. Erase the startup configuration 
+and reload each router to clear previous configurations.
+Step 2 : Configure the hostname and interface addresses.
+a. You can copy and paste the following configurations into your routers to begin.
+Router R1 (hostname Andheri)
+Andheri(config)# interface Loopback0
+Andheri(config-if)# ip address 10.1.1.1 255.255.255.0
+Andheri(config-if)# exit
+Andheri(config)# interface Serial0/0/0
+Andheri(config-if)# ip address 192.168.1.5 255.255.255.252
+Andheri(config-if)# no shutdown
+Andheri(config-if)# end
+Andheri#
+Router R2 (hostname Bandra)
+Bandra(config)# interface Loopback0
+Bandra(config-if)# ip address 10.2.2.1 255.255.255.0
+Bandra(config-if)# interface Serial0/0/0
+Bandra(config-if)# ip address 192.168.1.6 255.255.255.252
+Bandra(config-if)# no shutdown
+Bandra(config-if)# exit
+Bandra(config)# interface Serial0/0/1
+Bandra(config-if)# ip address 172.24.1.17 255.255.255.252
+Bandra(config-if)# no shutdown
+Bandra(config-if)# end
+Bandra#
+Router R3 (hostname ChurchGate)
+Churchgate(config)# interface Loopback0
+Churchgate(config-if)# ip address 10.3.3.1 255.255.255.0
+Churchgate(config-if)# exit
+Churchgate(config)# interface Serial0/0/1
+Churchgate(config-if)# ip address 172.24.1.18 255.255.255.252
+Churchgate(config-if)# no shutdown
+Churchgate(config-if)# end
+Churchgate#
+ 
+ 
+b. Use ping to test the connectivity between the directly connected routers.
+Step 3 : Configure BGP.
+a. Configure BGP for normal operation. Enter the appropriate BGP commands on each 
+router so that they identify their BGP neighbors and advertise their loopback networks.
+Andheri(config)# router bgp 100
+Andheri(config-router)# neighbor 192.168.1.6 remote-as 300
+Andheri(config-router)# network 10.1.1.0 mask 255.255.255.0
+Bandra(config)# router bgp 300
+Bandra(config-router)# neighbor 192.168.1.5 remote-as 100
+Bandra(config-router)# neighbor 172.24.1.18 remote-as 65000
+Bandra(config-router)# network 10.2.2.0 mask 255.255.255.0
+ 
+Churchgate(config)# router bgp 65000
+Churchgate(config-router)# neighbor 172.24.1.17 remote-as 300
+Churchgate(config-router)# network 10.3.3.0 mask 255.255.255.0
+b. Verify that these routers have established the appropriate neighbor relationships by 
+issuing the show ip bgp neighbors command on each router. 
+Bandra# show ip bgp neighbors
+ 
+Step 4 : Remove the private AS.
+a. DBandralay the Andheri routing table using the show ip route command. Andheri 
+should have a route to both 10.2.2.0 and 10.3.3.0. Troubleshoot if necessary. 
+Andheri#show ip route
+b . Ping again, this time as an extended ping, sourcing from the Loopback0 interface 
+address. ping 10.3.3.1 source 10.1.1.1 or ping 10.3.3.1 source Lo0
+ 
+c.Now check the BGP table on Andheri. The AS_ PATH to the 10.3.3.0 network should 
+be AS 300. It no longer has the private AS in the path. 
+Andheri# show ip bgp
+Step 5 : Use the AS_PATH attribute to filter routes.
+a. Configure a special kind of access list to match BGP routes with an AS_PATH 
+attribute that both begins and ends with the number 100. Enter the following 
+commands on Bandra. 
+Bandra(config)# ip as-path access-list 1 deny ^100$
+Bandra(config)# ip as-path access-list 1 permit .*
+ 
+b. Apply the configured access list using the neighbor command with the filter-list 
+option.
+Bandra(config)# router bgp 300
+Bandra (config-router)# neighbor 192.168.1.5 remove-private-as
+c. Use the clear ip bgp * command to reset the routing information. Wait several 
+seconds and then check the routing table for BANDRA. The route to 10.1.1.0 should be 
+in the routing table.
+Andheri# show ip route
+d. Return to BANDRA and verify that the filter is working as intended. 
+Bandra# show ip bgp regexp ^100$
+e. Run the following Tcl script on all routers to verify whether there is connectivity. All 
+pings from BANDRA should be successful. Andheri should not be able to ping the 
+Churchgate loopback 10.3.3.1 or the WAN link 172.24.1.16/30. Churchgate should not 
+be able to ping the Andheri loopback 10.1.1.1 or the WAN link 192.168.1.4/30.
