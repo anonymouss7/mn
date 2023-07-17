@@ -1,0 +1,43 @@
+Step 1 – IP addressing of MPLS Core and OSPF
+First bring 3 routers into your topology R1, R2, R3 position them as below. We are going to 
+address the routers and configure ospf to ensure loopback to loopback connectivity between R1 
+and R3
+You should now have full ip connectivity between R1, R2, R3 to verify this we need to see if we 
+can ping between the loopbacks of R1 and R3
+Step 2 – Configure LDP on all the interfaces in the MPLS Core
+In order to run MPLS you need to enable it, there are two ways to do this.
+At each interface enter the mpls ip command
+Under the ospf process use the mpls ldp autoconfig command
+You should see log messages coming up showing the LDP neighbors are up.
+To verify the mpls interfaces the command is very simple – sh mpls interface
+This is done on R2 and you can see that both interfaces are running mpls and using LDP
+You can also verify the LDP neighbors with the sh mpls ldp neighbors command.
+One more verification to confirm LDP is running ok is to do a trace between R1 and R3 and 
+verify if you get MPLS Labels show up in the trace.
+Step 3 – MPLS BGP Configuration between R1 and R3
+We need to establish a Multi Protocol BGP session between R1 and R3 this is done by 
+configuring the vpnv4 address family as below
+To verify the BGP session between R1 and R3 issue the command sh bgp vpnv4 unicast all 
+summary
+Step 4 – Add two more routers, create VRFs
+We will add two more routers into the topology so it now looks like the final topology
+If you issue the command sh ip route this shows the routes in the global table and you will 
+notice that you do not see 192.168.1.0/24
+We just need to enable OSPF on this interface and get the loopback address for R4 in the VRF 
+RED routing table before proceeding.
+If we now check the routes in the VRF RED routing table you should see 4.4.4.4 in there as well.
+We now need to repeat this process for R3 & R6 Router 6 will peer OSPF using process number 
+2 to a VRF configured on R3. It will use the local site addressing to 192.168.2.0/24
+We also need to configure a VRF onto R3 as well.
+Check the router in vrf RED
+Ok so we have come a long way now let’s review the current situation. We now have this setup
+As expected we have the local interface and the loopback address. When we are done we want 
+to see 6.6.6.6 in there so we can ping across the MPLS Check the routes on R1
+Which it is! 6.6.6.6 is now in the BGP table in VRF RED on R3 with a next hop of 192.168.2.6 (R6) 
+and also 4.4.4 is in there as well with a next hop of 1.1.1.1 (which is the loopback of R1 –
+showing that it is going over the MPLS and R2 is not in the picture)
+Before we do let’s see what the routing table look like on R4
+Do the same step of on R6
+Lets chevk ping command
+Which we can – to prove this is going over the mpls and be label switched and not routed, lets 
+do a trace
